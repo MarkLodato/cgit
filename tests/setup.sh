@@ -142,6 +142,18 @@ tests_done()
 	fi
 }
 
+skip_tests()
+{
+	reason="$*"
+	line="test skipped"
+	if [ -n "$reason" ]; then
+		line="$line: $reason"
+	fi
+	printf "     %-60s [skipped]\n" "$line" >>test-output.log
+	printf "     %-60s [skipped]\n" "$line"
+	echo
+}
+
 run_test()
 {
 	desc=$1
@@ -169,4 +181,10 @@ cgit_query()
 cgit_url()
 {
 	CGIT_CONFIG="$PWD/trash/cgitrc" QUERY_STRING="url=$1" "$PWD/../cgit"
+}
+
+cgit_has_feature()
+{
+	feature=$1
+	"$PWD/../cgit" --version | grep -q -e "+$feature"
 }

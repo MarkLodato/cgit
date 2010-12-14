@@ -13,6 +13,7 @@
 #include "configfile.h"
 #include "html.h"
 #include "repo.h"
+#include "repo-db.h"
 #include "ui-shared.h"
 #include "ui-stats.h"
 
@@ -21,6 +22,12 @@ const char *cgit_version = CGIT_VERSION;
 char *xstrdupn(const char *str)
 {
 	return (str ? xstrdup(str) : NULL);
+}
+
+void cgit_print_version(void)
+{
+	printf("cgit %s\n", cgit_version);
+	printf("Features: " DB_FEATURES "\n");
 }
 
 void add_mimetype(const char *name, const char *value)
@@ -679,6 +686,10 @@ static void cgit_parse_args(int argc, const char **argv)
 		}
 		else if (!strcmp(argv[i], "--nohttp")) {
 			ctx.env.no_http = "1";
+		}
+		else if (!strcmp(argv[i], "--version")) {
+			cgit_print_version();
+			exit(0);
 		}
 		else if (!strncmp(argv[i], "--query=", 8)) {
 			ctx.qry.raw = xstrdup(argv[i]+8);

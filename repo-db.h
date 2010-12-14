@@ -10,4 +10,12 @@ extern struct cgit_repo* repo_db_single(struct cgit_config *config, const char *
 extern int repo_db_hash(struct cgit_config *config);
 #endif
 
+#ifdef HAVE_SQLITE3
+# define SQLITE3_FEATURES "+sqlite3"
+#else
+# define SQLITE3_FEATURES "-sqlite3"
+#endif
+
+#define DB_FEATURES SQLITE3_FEATURES
+
 #endif

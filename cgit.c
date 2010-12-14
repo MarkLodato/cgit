@@ -12,6 +12,7 @@
 #include "cmd.h"
 #include "configfile.h"
 #include "html.h"
+#include "repo.h"
 #include "ui-shared.h"
 #include "ui-stats.h"
 #include "scan-tree.h"

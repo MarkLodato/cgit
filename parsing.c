@@ -7,6 +7,7 @@
  */
 
 #include "cgit.h"
+#include "repo.h"
 
 /*
  * url syntax: [repo ['/' cmd [ '/' path]]]

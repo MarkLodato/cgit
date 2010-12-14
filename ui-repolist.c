@@ -9,6 +9,7 @@
 #include "cgit.h"
 #include "html.h"
 #include "ui-shared.h"
+#include "repo.h"
 
 time_t read_agefile(char *path)
 {

@@ -85,12 +85,6 @@ struct cgit_repo {
 typedef void (*repo_config_fn)(struct cgit_repo *repo, const char *name,
 	      const char *value);
 
-struct cgit_repolist {
-	int length;
-	int count;
-	struct cgit_repo *repos;
-};
-
 struct commitinfo {
 	struct commit *commit;
 	char *author;
@@ -263,13 +257,8 @@ struct cgit_snapshot_format {
 
 extern const char *cgit_version;
 
-extern struct cgit_repolist cgit_repolist;
 extern struct cgit_context ctx;
 extern const struct cgit_snapshot_format cgit_snapshot_formats[];
-
-extern struct cgit_repo *cgit_add_repo(const char *url);
-extern struct cgit_repo *cgit_get_repoinfo(const char *url);
-extern void cgit_repo_config_cb(const char *name, const char *value);
 
 extern int chk_zero(int result, char *msg);
 extern int chk_positive(int result, char *msg);

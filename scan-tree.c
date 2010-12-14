@@ -10,6 +10,7 @@
 #include "cgit.h"
 #include "configfile.h"
 #include "html.h"
+#include "repo.h"
 
 #define MAX_PATH 4096
 

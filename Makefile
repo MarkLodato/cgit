@@ -96,6 +96,7 @@ OBJECTS += cmd.o
 OBJECTS += configfile.o
 OBJECTS += html.o
 OBJECTS += parsing.o
+OBJECTS += repo.o
 OBJECTS += scan-tree.o
 OBJECTS += shared.o
 OBJECTS += ui-atom.o

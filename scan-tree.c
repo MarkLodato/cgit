@@ -47,12 +47,11 @@ static int is_git_dir(const char *path)
 }
 
 static struct cgit_repo *repo;
-static repo_config_fn config_fn;
 static char *owner;
 
 static void repo_config(const char *name, const char *value)
 {
-	config_fn(repo, name, value);
+	cgit_repo_config(repo, name, value);
 }
 
 static int git_owner_config(const char *key, const char *value, void *cb)
@@ -69,7 +68,7 @@ static char *xstrrchr(char *s, char *from, int c)
 	return from < s ? NULL : from;
 }
 
-static void add_repo(const char *base, const char *path, repo_config_fn fn)
+static void add_repo(const char *base, const char *path)
 {
 	struct stat st;
 	struct passwd *pwd;
@@ -153,12 +152,11 @@ static void add_repo(const char *base, const char *path, repo_config_fn fn)
 
 	p = fmt("%s/cgitrc", path);
 	if (!stat(p, &st)) {
-		config_fn = fn;
 		parse_configfile(xstrdup(p), &repo_config);
 	}
 }
 
-static void scan_path(const char *base, const char *path, repo_config_fn fn)
+static void scan_path(const char *base, const char *path)
 {
 	DIR *dir = opendir(path);
 	struct dirent *ent;
@@ -171,11 +169,11 @@ static void scan_path(const char *base, const char *path, repo_config_fn fn)
 		return;
 	}
 	if (is_git_dir(path)) {
-		add_repo(base, path, fn);
+		add_repo(base, path);
 		goto end;
 	}
 	if (is_git_dir(fmt("%s/.git", path))) {
-		add_repo(base, fmt("%s/.git", path), fn);
+		add_repo(base, fmt("%s/.git", path));
 		goto end;
 	}
 	while((ent = readdir(dir)) != NULL) {
@@ -201,7 +199,7 @@ static void scan_path(const char *base, const char *path, repo_config_fn fn)
 			continue;
 		}
 		if (S_ISDIR(st.st_mode))
-			scan_path(base, buf, fn);
+			scan_path(base, buf);
 		free(buf);
 	}
 end:
@@ -210,7 +208,7 @@ end:
 
 #define lastc(s) s[strlen(s) - 1]
 
-void scan_projects(const char *path, const char *projectsfile, repo_config_fn fn)
+void scan_projects(const char *path, const char *projectsfile)
 {
 	char line[MAX_PATH * 2], *z;
 	FILE *projects;
@@ -227,7 +225,7 @@ void scan_projects(const char *path, const char *projectsfile, repo_config_fn fn
 		     z = &lastc(line))
 			*z = '\0';
 		if (strlen(line))
-			scan_path(path, fmt("%s/%s", path, line), fn);
+			scan_path(path, fmt("%s/%s", path, line));
 	}
 	if ((err = ferror(projects))) {
 		fprintf(stderr, "Error reading from projectsfile %s: %s (%d)\n",
@@ -236,7 +234,7 @@ void scan_projects(const char *path, const char *projectsfile, repo_config_fn fn
 	fclose(projects);
 }
 
-void scan_tree(const char *path, repo_config_fn fn)
+void scan_tree(const char *path)
 {
-	scan_path(path, path, fn);
+	scan_path(path, path);
 }

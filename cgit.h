@@ -85,6 +85,9 @@ struct cgit_repo {
 typedef void (*repo_config_fn)(struct cgit_repo *repo, const char *name,
 	      const char *value);
 
+extern void cgit_repo_config(struct cgit_repo *repo, const char *name,
+			     const char *value);
+
 struct commitinfo {
 	struct commit *commit;
 	char *author;

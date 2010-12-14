@@ -44,7 +44,7 @@ struct cgit_filter *new_filter(const char *cmd, int extra_args)
 
 static void process_cached_repolist(const char *path);
 
-void repo_config(struct cgit_repo *repo, const char *name, const char *value)
+void cgit_repo_config(struct cgit_repo *repo, const char *name, const char *value)
 {
 	if (!strcmp(name, "name"))
 		repo->name = xstrdup(value);
@@ -93,7 +93,7 @@ void config_cb(const char *name, const char *value)
 	else if (ctx.repo && !strcmp(name, "repo.path"))
 		ctx.repo->path = trim_end(value, '/');
 	else if (ctx.repo && !prefixcmp(name, "repo."))
-		repo_config(ctx.repo, name + 5, value);
+		cgit_repo_config(ctx.repo, name + 5, value);
 	else if (!strcmp(name, "readme"))
 		ctx.cfg.readme = xstrdup(value);
 	else if (!strcmp(name, "root-title"))
@@ -193,9 +193,9 @@ void config_cb(const char *name, const char *value)
 			process_cached_repolist(expand_macros(value));
 		else if (ctx.cfg.project_list)
 			scan_projects(expand_macros(value),
-				      ctx.cfg.project_list, repo_config);
+				      ctx.cfg.project_list);
 		else
-			scan_tree(expand_macros(value), repo_config);
+			scan_tree(expand_macros(value));
 	else if (!strcmp(name, "scan-path-hidden"))
 		ctx.cfg.scan_path_hidden = atoi(value);
 	else if (!strcmp(name, "section-from-path"))
@@ -597,9 +597,9 @@ static int generate_cached_repolist(const char *path, const char *cached_rc)
 	repolist = cgit_get_repolist();
 	idx = repolist->count;
 	if (ctx.cfg.project_list)
-		scan_projects(path, ctx.cfg.project_list, repo_config);
+		scan_projects(path, ctx.cfg.project_list);
 	else
-		scan_tree(path, repo_config);
+		scan_tree(path);
 	repolist = cgit_get_repolist();
 	print_repolist(f, repolist, idx);
 	if (rename(locked_rc, cached_rc))
@@ -628,10 +628,9 @@ static void process_cached_repolist(const char *path)
 		 */
 		if (generate_cached_repolist(path, cached_rc)) {
 			if (ctx.cfg.project_list)
-				scan_projects(path, ctx.cfg.project_list,
-					      repo_config);
+				scan_projects(path, ctx.cfg.project_list);
 			else
-				scan_tree(path, repo_config);
+				scan_tree(path);
 		}
 		return;
 	}
@@ -702,7 +701,7 @@ static void cgit_parse_args(int argc, const char **argv)
 			 */
 			ctx.cfg.snapshots = 0xFF;
 			scan++;
-			scan_tree(argv[i] + 12, repo_config);
+			scan_tree(argv[i] + 12);
 		}
 	}
 	if (scan) {

@@ -58,7 +58,7 @@ repo.desc=the $name repo
 EOF
 }
 
-mkrepo2 trash/repos/linker
+mkrepo2 trash/repos/linker >/dev/null
 add_repo trash/repos/linker linker
 
 exist() {

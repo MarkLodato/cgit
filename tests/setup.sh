@@ -25,6 +25,8 @@ mkrepo() {
 	mkdir -p $name
 	cd $name
 	git init
+	rm -f .git/description
+	rm -f .git/cgitrc
 	n=1
 	while test $n -le $count
 	do
@@ -50,6 +52,8 @@ setup_repos()
 	mkrepo trash/repos/foo 5 >/dev/null
 	mkrepo trash/repos/bar 50 >/dev/null
 	mkrepo trash/repos/foo+bar 10 testplus >/dev/null
+	mkrepo trash/repos/sub/project 3 >/dev/null
+	mkrepo trash/repos2/sub/another 6 >/dev/null
 	cat >trash/cgitrc <<EOF
 virtual-root=/
 cache-root=$PWD/trash/cache
@@ -71,11 +75,50 @@ repo.path=$PWD/trash/repos/foo/.git
 repo.url=bar
 repo.path=$PWD/trash/repos/bar/.git
 repo.desc=the bar repo
+repo.owner=barowner
+repo.name=bar repo
 
 repo.url=foo+bar
 repo.path=$PWD/trash/repos/foo+bar/.git
 repo.desc=the foo+bar repo
+
+repo.url=sub/project
+repo.path=$PWD/trash/repos/sub/project/.git
+repo.name=sub-project
+
+repo.url=sub/another
+repo.path=$PWD/trash/repos2/sub/another/.git
+repo.name=another project
+repo.desc=this is in another scan path
 EOF
+}
+
+# For each repostory, call $1 with $url, $path, $name, $desc, and $repo set if
+# and only if they were set in cgitrc.
+for_each_repo()
+{
+	func=$1
+	unset url path name desc owner
+	while read line; do
+		value=${line#*=}
+		case "$line" in
+		repo.url=*)
+			if test -n "$url"; then
+				$func
+			fi
+			url="$value"
+			unset path name desc owner
+			;;
+		repo.path=*) path="$value" ;;
+		repo.name=*) name="$value" ;;
+		repo.desc=*) desc="$value" ;;
+		repo.owner=*) owner="$value" ;;
+		esac
+	done < trash/cgitrc
+	if test -n "$url"; then
+		$func
+	fi
+	unset func value url path name desc owner
 }
 
 prepare_tests()

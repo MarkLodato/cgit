@@ -674,34 +674,34 @@ static void cgit_parse_args(int argc, const char **argv)
 		if (!strncmp(argv[i], "--cache=", 8)) {
 			ctx.cfg.cache_root = xstrdup(argv[i]+8);
 		}
-		if (!strcmp(argv[i], "--nocache")) {
+		else if (!strcmp(argv[i], "--nocache")) {
 			ctx.cfg.nocache = 1;
 		}
-		if (!strcmp(argv[i], "--nohttp")) {
+		else if (!strcmp(argv[i], "--nohttp")) {
 			ctx.env.no_http = "1";
 		}
-		if (!strncmp(argv[i], "--query=", 8)) {
+		else if (!strncmp(argv[i], "--query=", 8)) {
 			ctx.qry.raw = xstrdup(argv[i]+8);
 		}
-		if (!strncmp(argv[i], "--repo=", 7)) {
+		else if (!strncmp(argv[i], "--repo=", 7)) {
 			ctx.qry.repo = xstrdup(argv[i]+7);
 		}
-		if (!strncmp(argv[i], "--page=", 7)) {
+		else if (!strncmp(argv[i], "--page=", 7)) {
 			ctx.qry.page = xstrdup(argv[i]+7);
 		}
-		if (!strncmp(argv[i], "--head=", 7)) {
+		else if (!strncmp(argv[i], "--head=", 7)) {
 			ctx.qry.head = xstrdup(argv[i]+7);
 			ctx.qry.has_symref = 1;
 		}
-		if (!strncmp(argv[i], "--sha1=", 7)) {
+		else if (!strncmp(argv[i], "--sha1=", 7)) {
 			ctx.qry.sha1 = xstrdup(argv[i]+7);
 			ctx.qry.has_sha1 = 1;
 		}
-		if (!strncmp(argv[i], "--ofs=", 6)) {
+		else if (!strncmp(argv[i], "--ofs=", 6)) {
 			ctx.qry.ofs = atoi(argv[i]+6);
 		}
-		if (!strncmp(argv[i], "--scan-tree=", 12) ||
-		    !strncmp(argv[i], "--scan-path=", 12)) {
+		else if (!strncmp(argv[i], "--scan-tree=", 12) ||
+			 !strncmp(argv[i], "--scan-path=", 12)) {
 			struct string_list_item *item;
 			/* HACK: the global snapshot bitmask defines the
 			 * set of allowed snapshot formats, but the config

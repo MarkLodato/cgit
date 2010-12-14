@@ -8,6 +8,7 @@
  */
 
 #include "scan-tree.h"
+#include "cache.h"
 #include "configfile.h"
 #include "html.h"
 #include "repo.h"
@@ -158,7 +159,7 @@ static int add_repo(const char *base, const char *path)
 	return 1;
 }
 
-static int scan_path(const char *base, const char *path)
+static int scan_path(const char *base, const char *path, int recurse)
 {
 	DIR *dir = opendir(path);
 	struct dirent *ent;
@@ -179,7 +180,7 @@ static int scan_path(const char *base, const char *path)
 		found = add_repo(base, fmt("%s/.git", path));
 		goto end;
 	}
-	while((ent = readdir(dir)) != NULL) {
+	while(recurse && (ent = readdir(dir)) != NULL) {
 		if (ent->d_name[0] == '.') {
 			if (ent->d_name[1] == '\0')
 				continue;
@@ -202,7 +203,7 @@ static int scan_path(const char *base, const char *path)
 			continue;
 		}
 		if (S_ISDIR(st.st_mode))
-			found += scan_path(base, buf);
+			found += scan_path(base, buf, recurse);
 		free(buf);
 	}
 end:
@@ -212,11 +213,11 @@ end:
 
 #define lastc(s) s[strlen(s) - 1]
 
-int scan_projects(const char *path, const char *projectsfile)
+static void read_project_list(const char *projectsfile, struct string_list *list)
 {
 	char line[MAX_PATH * 2], *z;
 	FILE *projects;
-	int err, found = 0;
+	int err;
 	
 	projects = fopen(projectsfile, "r");
 	if (!projects) {
@@ -229,17 +230,80 @@ int scan_projects(const char *path, const char *projectsfile)
 		     z = &lastc(line))
 			*z = '\0';
 		if (strlen(line))
-			found += scan_path(path, fmt("%s/%s", path, line));
+			string_list_append(list, line);
 	}
 	if ((err = ferror(projects))) {
 		fprintf(stderr, "Error reading from projectsfile %s: %s (%d)\n",
 			projectsfile, strerror(err), err);
 	}
 	fclose(projects);
+}
+
+int scan_tree(struct cgit_config *config)
+{
+	struct string_list_item *item, *project;
+	struct string_list project_list = STRING_LIST_INIT_DUP;
+	int found = 0;
+	char *path, *subdir;
+	for_each_string_list_item(item, &config->scan_paths) {
+		path = item->string;
+		if (item->util) {
+			read_project_list(item->util, &project_list);
+			for_each_string_list_item(project, &project_list) {
+				subdir = fmt("%s/%s", path, project->string);
+				found += scan_path(path, subdir, 1);
+			}
+			string_list_clear(&project_list, 0);
+		} else {
+			found += scan_path(path, path, 1);
+		}
+	}
 	return found;
 }
 
-int scan_tree(const char *path)
+struct cgit_repo* scan_tree_single(struct cgit_config *config, const char *url)
 {
-	return scan_path(path, path);
+	struct string_list_item *item, *project;
+	struct string_list project_list = STRING_LIST_INIT_DUP;
+	int len, stop;
+	char *path;
+	for_each_string_list_item(item, &config->scan_paths) {
+		path = item->string;
+		if (item->util) {
+			read_project_list(item->util, &project_list);
+			stop = 0;
+			for_each_string_list_item(project, &project_list) {
+				len = strlen(project->string);
+				if (strncmp(project->string, url, len) ||
+				    (url[len] != '\0' && url[len] != '/')) {
+					stop = 1;
+					break;
+				}
+			}
+			string_list_clear(&project_list, 0);
+			if (stop)
+				continue;
+		}
+		if (scan_path(path, fmt("%s/%s", path, url), 0))
+			return repo;
+	}
+	return NULL;
+}
+
+int scan_tree_hash(struct cgit_config *config)
+{
+	struct string_list_item *item;
+	int hash = 0;
+	for_each_string_list_item(item, &config->scan_paths) {
+		hash += hash_str("scan-path=");
+		hash += hash_str(item->string);
+		if (item->util) {
+			hash += hash_str("\nproject-list=");
+			hash += hash_str(item->util);
+		}
+		hash += hash_str("\n");
+	}
+	if (config->scan_paths.nr && !hash)
+		hash = 1;
+	return hash;
 }

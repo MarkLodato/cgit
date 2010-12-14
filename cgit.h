@@ -164,7 +164,6 @@ struct cgit_config {
 	char *logo;
 	char *logo_link;
 	char *module_link;
-	char *project_list;
 	char *readme;
 	char *robots;
 	char *root_title;
@@ -212,6 +211,7 @@ struct cgit_config {
 	int summary_tags;
 	int ssdiff;
 	struct string_list mimetypes;
+	struct string_list scan_paths;
 	struct cgit_filter *about_filter;
 	struct cgit_filter *commit_filter;
 	struct cgit_filter *source_filter;

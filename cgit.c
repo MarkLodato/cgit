@@ -15,9 +15,13 @@
 #include "repo.h"
 #include "ui-shared.h"
 #include "ui-stats.h"
-#include "scan-tree.h"
 
 const char *cgit_version = CGIT_VERSION;
+
+char *xstrdupn(const char *str)
+{
+	return (str ? xstrdup(str) : NULL);
+}
 
 void add_mimetype(const char *name, const char *value)
 {
@@ -41,8 +45,6 @@ struct cgit_filter *new_filter(const char *cmd, int extra_args)
 	f->argv[1] = NULL;
 	return f;
 }
-
-static void process_cached_repolist(const char *path);
 
 void cgit_repo_config(struct cgit_repo *repo, const char *name, const char *value)
 {
@@ -83,6 +85,8 @@ void cgit_repo_config(struct cgit_repo *repo, const char *name, const char *valu
 			repo->source_filter = new_filter(value, 1);
 	}
 }
+
+static char *last_project_list;
 
 void config_cb(const char *name, const char *value)
 {
@@ -187,15 +191,13 @@ void config_cb(const char *name, const char *value)
 	else if (!strcmp(name, "max-commit-count"))
 		ctx.cfg.max_commit_count = atoi(value);
 	else if (!strcmp(name, "project-list"))
-		ctx.cfg.project_list = xstrdup(expand_macros(value));
-	else if (!strcmp(name, "scan-path"))
-		if (!ctx.cfg.nocache && ctx.cfg.cache_size)
-			process_cached_repolist(expand_macros(value));
-		else if (ctx.cfg.project_list)
-			scan_projects(expand_macros(value),
-				      ctx.cfg.project_list);
-		else
-			scan_tree(expand_macros(value));
+		last_project_list = xstrdup(expand_macros(value));
+	else if (!strcmp(name, "scan-path")) {
+		struct string_list_item *item;
+		item = string_list_append(&ctx.cfg.scan_paths,
+					  expand_macros(value));
+		item->util = xstrdupn(last_project_list);
+	}
 	else if (!strcmp(name, "scan-path-hidden"))
 		ctx.cfg.scan_path_hidden = atoi(value);
 	else if (!strcmp(name, "section-from-path"))
@@ -281,11 +283,6 @@ static void querystring_cb(const char *name, const char *value)
 	}
 }
 
-char *xstrdupn(const char *str)
-{
-	return (str ? xstrdup(str) : NULL);
-}
-
 static void prepare_context(struct cgit_context *ctx)
 {
 	memset(ctx, 0, sizeof(*ctx));
@@ -312,7 +309,6 @@ static void prepare_context(struct cgit_context *ctx)
 	ctx->cfg.max_blob_size = 0;
 	ctx->cfg.max_stats = 0;
 	ctx->cfg.module_link = "./?repo=%s&page=commit&id=%s";
-	ctx->cfg.project_list = NULL;
 	ctx->cfg.renamelimit = -1;
 	ctx->cfg.remove_suffix = 0;
 	ctx->cfg.robots = "index, nofollow";
@@ -344,6 +340,8 @@ static void prepare_context(struct cgit_context *ctx)
 	ctx->page.expires = ctx->page.modified;
 	ctx->page.etag = NULL;
 	memset(&ctx->cfg.mimetypes, 0, sizeof(struct string_list));
+	memset(&ctx->cfg.scan_paths, 0, sizeof(struct string_list));
+	ctx->cfg.scan_paths.strdup_strings = 1;
 	if (ctx->env.script_name)
 		ctx->cfg.script_name = ctx->env.script_name;
 	if (ctx->env.query_string)
@@ -576,7 +574,7 @@ void print_repolist(FILE *f, struct cgit_repolist *list, int start)
 /* Scan 'path' for git repositories, save the resulting repolist in 'cached_rc'
  * and return 0 on success.
  */
-static int generate_cached_repolist(const char *path, const char *cached_rc)
+static int generate_cached_repolist(const char *cached_rc)
 {
 	struct cgit_repolist *repolist;
 	char *locked_rc;
@@ -594,44 +592,34 @@ static int generate_cached_repolist(const char *path, const char *cached_rc)
 				locked_rc, strerror(errno), errno);
 		return errno;
 	}
-	repolist = cgit_get_repolist();
-	idx = repolist->count;
-	if (ctx.cfg.project_list)
-		scan_projects(path, ctx.cfg.project_list);
-	else
-		scan_tree(path);
+	idx = cgit_num_repos();
 	repolist = cgit_get_repolist();
 	print_repolist(f, repolist, idx);
 	if (rename(locked_rc, cached_rc))
 		fprintf(stderr, "[cgit] Error renaming %s to %s: %s (%d)\n",
 			locked_rc, cached_rc, strerror(errno), errno);
 	fclose(f);
+	cgit_repolist_done();
 	return 0;
 }
 
-static void process_cached_repolist(const char *path)
+static void process_cached_repolist(void)
 {
 	struct stat st;
 	char *cached_rc;
 	time_t age;
 	unsigned long hash;
 
-	hash = hash_str(path);
-	if (ctx.cfg.project_list)
-		hash += hash_str(ctx.cfg.project_list);
+	if (ctx.cfg.nocache || !ctx.cfg.cache_size)
+		return;
+
+	hash = cgit_repolist_hash();
+	if (hash == 0)
+		return;
 	cached_rc = xstrdup(fmt("%s/rc-%8lx", ctx.cfg.cache_root, hash));
 
 	if (stat(cached_rc, &st)) {
-		/* Nothing is cached, we need to scan without forking. And
-		 * if we fail to generate a cached repolist, we need to
-		 * invoke scan_tree manually.
-		 */
-		if (generate_cached_repolist(path, cached_rc)) {
-			if (ctx.cfg.project_list)
-				scan_projects(path, ctx.cfg.project_list);
-			else
-				scan_tree(path);
-		}
+		generate_cached_repolist(cached_rc);
 		return;
 	}
 
@@ -649,7 +637,7 @@ static void process_cached_repolist(const char *path)
 	if (fork())
 		return;
 
-	exit(generate_cached_repolist(path, cached_rc));
+	exit(generate_cached_repolist(cached_rc));
 }
 
 static void cgit_parse_args(int argc, const char **argv)
@@ -690,6 +678,7 @@ static void cgit_parse_args(int argc, const char **argv)
 		}
 		if (!strncmp(argv[i], "--scan-tree=", 12) ||
 		    !strncmp(argv[i], "--scan-path=", 12)) {
+			struct string_list_item *item;
 			/* HACK: the global snapshot bitmask defines the
 			 * set of allowed snapshot formats, but the config
 			 * file hasn't been parsed yet so the mask is
@@ -701,7 +690,9 @@ static void cgit_parse_args(int argc, const char **argv)
 			 */
 			ctx.cfg.snapshots = 0xFF;
 			scan++;
-			scan_tree(argv[i] + 12);
+			item = string_list_append(&ctx.cfg.scan_paths,
+						  argv[i] + 12);
+			item->util = xstrdupn(last_project_list);
 		}
 	}
 	if (scan) {
@@ -740,6 +731,7 @@ int main(int argc, const char **argv)
 
 	cgit_parse_args(argc, argv);
 	parse_configfile(expand_macros(ctx.env.cgit_config), config_cb);
+	process_cached_repolist();
 	ctx.repo = NULL;
 	http_parse_querystring(ctx.qry.raw, querystring_cb);
 

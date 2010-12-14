@@ -150,6 +150,18 @@ struct cgit_query {
 	char *vpath;
 };
 
+struct cgit_config_db {
+	char *base_path;
+	char *database;
+	char *driver;
+	char *host;
+	char *password;
+	char *query_all;
+	char *query_single;
+	char *username;
+	int port;
+};
+
 struct cgit_config {
 	char *agefile;
 	char *cache_root;
@@ -215,6 +227,7 @@ struct cgit_config {
 	struct cgit_filter *about_filter;
 	struct cgit_filter *commit_filter;
 	struct cgit_filter *source_filter;
+	struct cgit_config_db db;
 };
 
 struct cgit_page {

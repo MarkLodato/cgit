@@ -20,6 +20,8 @@ MAN_TXT  = $(MAN5_TXT)
 DOC_MAN5 = $(patsubst %.txt,%,$(MAN5_TXT))
 DOC_HTML = $(patsubst %.txt,%.html,$(MAN_TXT))
 DOC_PDF  = $(patsubst %.txt,%.pdf,$(MAN_TXT))
+SQLITE3_LIB = -lsqlite3
+SQLITE3_INC =
 
 # Define NO_STRCASESTR if you don't have strcasestr.
 #
@@ -33,6 +35,7 @@ DOC_PDF  = $(patsubst %.txt,%.pdf,$(MAN_TXT))
 # j, z, t. (representing long long int, char, intmax_t, size_t, ptrdiff_t).
 # some C compilers supported these specifiers prior to C99 as an extension.
 #
+# Define HAVE_SQLITE3 to enable SQLite3 backend.
 
 #-include config.mak
 
@@ -97,6 +100,7 @@ OBJECTS += configfile.o
 OBJECTS += html.o
 OBJECTS += parsing.o
 OBJECTS += repo.o
+OBJECTS += repo-db.o
 OBJECTS += scan-tree.o
 OBJECTS += shared.o
 OBJECTS += ui-atom.o
@@ -156,6 +160,10 @@ ifdef NO_OPENSSL
 	GIT_OPTIONS += NO_OPENSSL=1
 else
 	EXTLIBS += -lcrypto
+endif
+ifdef HAVE_SQLITE3
+	CFLAGS += -DHAVE_SQLITE3 $(SQLITE3_INC)
+	EXTLIBS += $(SQLITE3_LIB)
 endif
 
 cgit: $(OBJECTS) libgit

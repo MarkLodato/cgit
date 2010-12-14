@@ -40,6 +40,9 @@ agefile::
 	function in libgit. Recommended timestamp-format is "yyyy-mm-dd
 	hh:mm:ss". Default value: "info/web/last-modified".
 
+db.*:
+	See section "DATABASE BACKEND" below.
+
 cache-root::
 	Path used to store the cgit cache entries. Default value:
 	"/var/cache/cgit".
@@ -428,6 +431,46 @@ options are only acknowledged in repo-specific config files when
 
 Note: the "repo." prefix is dropped from the option names in repo-specific
 config files, e.g. "repo.desc" becomes "desc".
+
+
+DATABASE BACKEND
+----------------
+In addition to setting the repo.* in the main cgitrc file and/or using the
+"scan-path" option, cgit can be configured to query a database to get
+repository configuration, if this option was enabled at compile time.
+
+db.base-path::
+	If set, prepend this value + "/" to all relative paths (those without
+	a leading "/") listed in the database.
+
+db.database::
+	Database name, or path to the database file for sqlite3. (required)
+
+db.driver::
+	Type of database.  Available drivers: "sqlite3". (required)
+
+db.host::
+	Hostname for the database server. (ignored for sqlite3)
+
+db.password::
+	Password for database account. (ignored for sqlite3)
+
+db.port::
+	Port for the database server. (ignored for sqlite3)
+
+db.query.all::
+	An SQL SELECT statement to fetch all repositories.  Each column must
+	be named for the corresponding "repo." option, without the "repo."
+	prefix; use the SQL "AS" keyword to rename columns. At a minimum,
+	"url" must be set.  If "path" is not given, "url" is used.  (required)
+
+db.query.single::
+	An SQL SELECT statement to fetch a single repository.  The url of the
+	repository is passed as the statement's sole parameter.  Default
+	value: db.query.all + " WHERE url=?"
+
+db.username::
+	Username for database account. (ignored for sqlite3)
 
 
 EXAMPLE CGITRC FILE

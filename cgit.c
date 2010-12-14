@@ -86,6 +86,28 @@ void cgit_repo_config(struct cgit_repo *repo, const char *name, const char *valu
 	}
 }
 
+static void config_db(const char *name, const char *value)
+{
+	if (!strcmp(name, "driver"))
+		ctx.cfg.db.driver = xstrdup(value);
+	else if (!strcmp(name, "database"))
+		ctx.cfg.db.database = xstrdup(value);
+	else if (!strcmp(name, "host"))
+		ctx.cfg.db.host = xstrdup(value);
+	else if (!strcmp(name, "port"))
+		ctx.cfg.db.port = atoi(value);
+	else if (!strcmp(name, "username"))
+		ctx.cfg.db.username = xstrdup(value);
+	else if (!strcmp(name, "password"))
+		ctx.cfg.db.password = xstrdup(value);
+	else if (!strcmp(name, "base-path"))
+		ctx.cfg.db.base_path = xstrdup(value);
+	else if (!strcmp(name, "query.all"))
+		ctx.cfg.db.query_all = xstrdup(value);
+	else if (!strcmp(name, "query.single"))
+		ctx.cfg.db.query_single = xstrdup(value);
+}
+
 static char *last_project_list;
 
 void config_cb(const char *name, const char *value)
@@ -98,6 +120,8 @@ void config_cb(const char *name, const char *value)
 		ctx.repo->path = trim_end(value, '/');
 	else if (ctx.repo && !prefixcmp(name, "repo."))
 		cgit_repo_config(ctx.repo, name + 5, value);
+	else if (!strncmp(name, "db.", 3))
+		config_db(name+3, value);
 	else if (!strcmp(name, "readme"))
 		ctx.cfg.readme = xstrdup(value);
 	else if (!strcmp(name, "root-title"))

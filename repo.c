@@ -12,6 +12,7 @@
 #include "ui-stats.h"
 
 #include "scan-tree.h"
+#include "repo-db.h"
 
 static struct cgit_repolist cgit_repolist;
 
@@ -30,6 +31,9 @@ struct provider {
 };
 
 static struct provider providers[] = {
+#ifdef HAVE_REPO_DB
+	{"db", repo_db_single, repo_db, repo_db_hash},
+#endif
 	{"scan-tree", scan_tree_single, scan_tree, scan_tree_hash}
 };
 static int num_providers = sizeof(providers) / sizeof(*providers);

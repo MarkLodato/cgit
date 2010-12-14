@@ -36,6 +36,9 @@ struct cgit_repo *cgit_add_repo(const char *url)
 {
 	struct cgit_repo *ret;
 
+	if (!url || !url[0])
+		die("repo url must be non-blank");
+
 	if (++cgit_repolist.count > cgit_repolist.length) {
 		if (cgit_repolist.length == 0)
 			cgit_repolist.length = 8;

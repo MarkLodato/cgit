@@ -447,7 +447,7 @@ db.database::
 	Database name, or path to the database file for sqlite3. (required)
 
 db.driver::
-	Type of database.  Available drivers: "sqlite3". (required)
+	Type of database.  Available drivers: "mysql", "sqlite3". (required)
 
 db.host::
 	Hostname for the database server. (ignored for sqlite3)

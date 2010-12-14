@@ -22,6 +22,8 @@ DOC_HTML = $(patsubst %.txt,%.html,$(MAN_TXT))
 DOC_PDF  = $(patsubst %.txt,%.pdf,$(MAN_TXT))
 SQLITE3_LIB = -lsqlite3
 SQLITE3_INC =
+MYSQL_LIB = $(shell mysql_config --libs)
+MYSQL_INC = $(shell mysql_config --include)
 
 # Define NO_STRCASESTR if you don't have strcasestr.
 #
@@ -34,6 +36,8 @@ SQLITE3_INC =
 # do not support the 'size specifiers' introduced by C99, namely ll, hh,
 # j, z, t. (representing long long int, char, intmax_t, size_t, ptrdiff_t).
 # some C compilers supported these specifiers prior to C99 as an extension.
+#
+# Define HAVE_MYSQL to enable MySQL backend.
 #
 # Define HAVE_SQLITE3 to enable SQLite3 backend.
 
@@ -160,6 +164,10 @@ ifdef NO_OPENSSL
 	GIT_OPTIONS += NO_OPENSSL=1
 else
 	EXTLIBS += -lcrypto
+endif
+ifdef HAVE_MYSQL
+	CFLAGS += -DHAVE_MYSQL $(MYSQL_INC)
+	EXTLIBS += $(MYSQL_LIB)
 endif
 ifdef HAVE_SQLITE3
 	CFLAGS += -DHAVE_SQLITE3 $(SQLITE3_INC)

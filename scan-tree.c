@@ -7,7 +7,7 @@
  *   (see COPYING for full license text)
  */
 
-#include "cgit.h"
+#include "scan-tree.h"
 #include "configfile.h"
 #include "html.h"
 #include "repo.h"
@@ -46,9 +46,9 @@ static int is_git_dir(const char *path)
 	return 1;
 }
 
-struct cgit_repo *repo;
-repo_config_fn config_fn;
-char *owner;
+static struct cgit_repo *repo;
+static repo_config_fn config_fn;
+static char *owner;
 
 static void repo_config(const char *name, const char *value)
 {

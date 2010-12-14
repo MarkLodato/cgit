@@ -68,7 +68,7 @@ static char *xstrrchr(char *s, char *from, int c)
 	return from < s ? NULL : from;
 }
 
-static void add_repo(const char *base, const char *path)
+static int add_repo(const char *base, const char *path)
 {
 	struct stat st;
 	struct passwd *pwd;
@@ -79,14 +79,14 @@ static void add_repo(const char *base, const char *path)
 	if (stat(path, &st)) {
 		fprintf(stderr, "Error accessing %s: %s (%d)\n",
 			path, strerror(errno), errno);
-		return;
+		return 0;
 	}
 
 	if (ctx.cfg.strict_export && stat(fmt("%s/%s", path, ctx.cfg.strict_export), &st))
-		return;
+		return 0;
 
 	if (!stat(fmt("%s/noweb", path), &st))
-		return;
+		return 0;
 
 	owner = NULL;
 	if (ctx.cfg.enable_gitweb_owner)
@@ -154,26 +154,29 @@ static void add_repo(const char *base, const char *path)
 	if (!stat(p, &st)) {
 		parse_configfile(xstrdup(p), &repo_config);
 	}
+
+	return 1;
 }
 
-static void scan_path(const char *base, const char *path)
+static int scan_path(const char *base, const char *path)
 {
 	DIR *dir = opendir(path);
 	struct dirent *ent;
 	char *buf;
 	struct stat st;
+	int found = 0;
 
 	if (!dir) {
 		fprintf(stderr, "Error opening directory %s: %s (%d)\n",
 			path, strerror(errno), errno);
-		return;
+		return 0;
 	}
 	if (is_git_dir(path)) {
-		add_repo(base, path);
+		found = add_repo(base, path);
 		goto end;
 	}
 	if (is_git_dir(fmt("%s/.git", path))) {
-		add_repo(base, fmt("%s/.git", path));
+		found = add_repo(base, fmt("%s/.git", path));
 		goto end;
 	}
 	while((ent = readdir(dir)) != NULL) {
@@ -199,20 +202,21 @@ static void scan_path(const char *base, const char *path)
 			continue;
 		}
 		if (S_ISDIR(st.st_mode))
-			scan_path(base, buf);
+			found += scan_path(base, buf);
 		free(buf);
 	}
 end:
 	closedir(dir);
+	return found;
 }
 
 #define lastc(s) s[strlen(s) - 1]
 
-void scan_projects(const char *path, const char *projectsfile)
+int scan_projects(const char *path, const char *projectsfile)
 {
 	char line[MAX_PATH * 2], *z;
 	FILE *projects;
-	int err;
+	int err, found = 0;
 	
 	projects = fopen(projectsfile, "r");
 	if (!projects) {
@@ -225,16 +229,17 @@ void scan_projects(const char *path, const char *projectsfile)
 		     z = &lastc(line))
 			*z = '\0';
 		if (strlen(line))
-			scan_path(path, fmt("%s/%s", path, line));
+			found += scan_path(path, fmt("%s/%s", path, line));
 	}
 	if ((err = ferror(projects))) {
 		fprintf(stderr, "Error reading from projectsfile %s: %s (%d)\n",
 			projectsfile, strerror(err), err);
 	}
 	fclose(projects);
+	return found;
 }
 
-void scan_tree(const char *path)
+int scan_tree(const char *path)
 {
-	scan_path(path, path);
+	return scan_path(path, path);
 }

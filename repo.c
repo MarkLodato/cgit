@@ -11,7 +11,7 @@
 #include "cgit.h"
 #include "ui-stats.h"
 
-struct cgit_repolist cgit_repolist;
+static struct cgit_repolist cgit_repolist;
 
 struct cgit_repo *cgit_add_repo(const char *url)
 {
@@ -65,4 +65,9 @@ struct cgit_repo *cgit_get_repoinfo(const char *url)
 			return repo;
 	}
 	return NULL;
+}
+
+struct cgit_repolist *cgit_get_repolist(void)
+{
+	return &cgit_repolist;
 }

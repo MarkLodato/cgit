@@ -578,6 +578,7 @@ void print_repolist(FILE *f, struct cgit_repolist *list, int start)
  */
 static int generate_cached_repolist(const char *path, const char *cached_rc)
 {
+	struct cgit_repolist *repolist;
 	char *locked_rc;
 	int idx;
 	FILE *f;
@@ -593,12 +594,14 @@ static int generate_cached_repolist(const char *path, const char *cached_rc)
 				locked_rc, strerror(errno), errno);
 		return errno;
 	}
-	idx = cgit_repolist.count;
+	repolist = cgit_get_repolist();
+	idx = repolist->count;
 	if (ctx.cfg.project_list)
 		scan_projects(path, ctx.cfg.project_list, repo_config);
 	else
 		scan_tree(path, repo_config);
-	print_repolist(f, &cgit_repolist, idx);
+	repolist = cgit_get_repolist();
+	print_repolist(f, repolist, idx);
 	if (rename(locked_rc, cached_rc))
 		fprintf(stderr, "[cgit] Error renaming %s to %s: %s (%d)\n",
 			locked_rc, cached_rc, strerror(errno), errno);
@@ -652,6 +655,7 @@ static void process_cached_repolist(const char *path)
 
 static void cgit_parse_args(int argc, const char **argv)
 {
+	struct cgit_repolist *repolist;
 	int i;
 	int scan = 0;
 
@@ -702,9 +706,10 @@ static void cgit_parse_args(int argc, const char **argv)
 		}
 	}
 	if (scan) {
-		qsort(cgit_repolist.repos, cgit_repolist.count,
+		repolist = cgit_get_repolist();
+		qsort(repolist->repos, repolist->count,
 			sizeof(struct cgit_repo), cmp_repos);
-		print_repolist(stdout, &cgit_repolist, 0);
+		print_repolist(stdout, repolist, 0);
 		exit(0);
 	}
 }
@@ -733,9 +738,6 @@ int main(int argc, const char **argv)
 	int err, ttl;
 
 	prepare_context(&ctx);
-	cgit_repolist.length = 0;
-	cgit_repolist.count = 0;
-	cgit_repolist.repos = NULL;
 
 	cgit_parse_args(argc, argv);
 	parse_configfile(expand_macros(ctx.env.cgit_config), config_cb);

@@ -193,14 +193,14 @@ struct sortcolumn sortcolumn[] = {
 	{NULL, NULL}
 };
 
-int sort_repolist(char *field)
+int sort_repolist(struct cgit_repolist *repolist, char *field)
 {
 	struct sortcolumn *column;
 
 	for (column = &sortcolumn[0]; column->name; column++) {
 		if (strcmp(field, column->name))
 			continue;
-		qsort(cgit_repolist.repos, cgit_repolist.count,
+		qsort(repolist->repos, repolist->count,
 			sizeof(struct cgit_repo), column->fn);
 		return 1;
 	}
@@ -210,6 +210,7 @@ int sort_repolist(char *field)
 
 void cgit_print_repolist()
 {
+	struct cgit_repolist *repolist;
 	int i, columns = 4, hits = 0, header = 0;
 	char *last_section = NULL;
 	char *section;
@@ -226,14 +227,15 @@ void cgit_print_repolist()
 	if (ctx.cfg.index_header)
 		html_include(ctx.cfg.index_header);
 
+	repolist = cgit_get_repolist();
 	if(ctx.qry.sort)
-		sorted = sort_repolist(ctx.qry.sort);
+		sorted = sort_repolist(repolist, ctx.qry.sort);
 	else
-		sort_repolist("section");
+		sort_repolist(repolist, "section");
 
 	html("<table summary='repository list' class='list nowrap'>");
-	for (i=0; i<cgit_repolist.count; i++) {
-		ctx.repo = &cgit_repolist.repos[i];
+	for (i=0; i<repolist->count; i++) {
+		ctx.repo = &repolist->repos[i];
 		if (!(is_match(ctx.repo) && is_in_url(ctx.repo)))
 			continue;
 		hits++;
